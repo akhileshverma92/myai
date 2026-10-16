@@ -2,6 +2,9 @@
 
 # dependencies
 /node_modules
+# Prefer pnpm on Vercel — keep only pnpm-lock.yaml committed
+package-lock.json
+yarn.lock
 
 # next.js
 /.next/
