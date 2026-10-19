@@ -2,16 +2,16 @@ import type { MetadataRoute } from "next"
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Auralink",
-    short_name: "Auralink",
-    description: "A focused AI workspace for thinking, writing, research, and creation.",
+    name: "Storylink",
+    short_name: "Storylink",
+    description: "Choose a story, chat with the character, and chase the ending — powered by local AI.",
     start_url: "/",
     scope: "/",
     display: "standalone",
     orientation: "portrait-primary",
     background_color: "#0f1014",
     theme_color: "#0f1014",
-    categories: ["productivity", "utilities"],
+    categories: ["entertainment", "games"],
     icons: [
       {
         src: "/icons/icon-192.png",

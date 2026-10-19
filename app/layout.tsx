@@ -1,30 +1,17 @@
 import type React from "react"
 import type { Metadata, Viewport } from "next"
-import { Figtree, Geist_Mono } from "next/font/google"
 import { Analytics } from "@vercel/analytics/next"
 import { PwaRegister } from "@/components/pwa-register"
 import "./globals.css"
 
-const figtree = Figtree({
-  subsets: ["latin"],
-  variable: "--font-figtree",
-  weight: ["400", "500", "600", "700"],
-})
-
-const geistMono = Geist_Mono({
-  subsets: ["latin"],
-  variable: "--font-geist-mono",
-  weight: ["400", "500", "600"],
-})
-
 export const metadata: Metadata = {
-  title: "Auralink",
-  description: "A focused AI workspace for thinking, writing, research, and creation.",
-  applicationName: "Auralink",
+  title: "Storylink",
+  description: "Choose a story, chat with the character, and chase the ending — powered by local AI.",
+  applicationName: "Storylink",
   appleWebApp: {
     capable: true,
-    statusBarStyle: "black-translucent",
-    title: "Auralink",
+    statusBarStyle: "default",
+    title: "Storylink",
   },
   formatDetection: {
     telephone: false,
@@ -47,11 +34,8 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   viewportFit: "cover",
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#f4f5f7" },
-    { media: "(prefers-color-scheme: dark)", color: "#0f1014" },
-  ],
-  colorScheme: "dark light",
+  themeColor: "#eef6f3",
+  colorScheme: "light",
 }
 
 export default function RootLayout({
@@ -61,9 +45,15 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body
-        className={`${figtree.variable} ${geistMono.variable} font-sans antialiased overflow-hidden`}
-      >
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&family=Fraunces:opsz,wght@9..144,600;9..144,700&family=JetBrains+Mono:wght@400;500;600&display=swap"
+          rel="stylesheet"
+        />
+      </head>
+      <body className="font-sans antialiased" style={{ colorScheme: "light" }}>
         {children}
         <PwaRegister />
         <Analytics />

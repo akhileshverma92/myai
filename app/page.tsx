@@ -1,5 +1,5 @@
-import { AiWorkspace } from "@/components/ai-workspace"
+import { StoryLibrary } from "@/components/story/story-library"
 
 export default function Page() {
-  return <AiWorkspace />
+  return <StoryLibrary />
 }
