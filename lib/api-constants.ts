@@ -58,6 +58,7 @@ export const DEFAULT_MODEL_IDS: Record<AiModelId, string> = {
   gpt: UI_MODEL_SLOTS.gpt.preferredModelId,
 }
 
+/** Env var names only — never put real tokens here. */
 export const CLOUDFLARE_ENV_KEYS = {
   accountId: "CLOUDFLARE_ACCOUNT_ID",
   apiToken: "CLOUDFLARE_API_TOKEN",

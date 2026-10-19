@@ -1,4 +1,4 @@
-const CACHE = "auralink-shell-v1"
+const CACHE = "storylink-shell-v2"
 const PRECACHE = ["/", "/manifest.webmanifest", "/icons/icon-192.png", "/icons/icon-512.png"]
 
 self.addEventListener("install", (event) => {
@@ -17,12 +17,16 @@ self.addEventListener("fetch", (event) => {
 
   const url = new URL(request.url)
   if (url.pathname.startsWith("/api/")) return
+  // Never cache Next.js / Turbopack internals
+  if (url.pathname.startsWith("/_next/")) return
 
   event.respondWith(
     fetch(request)
       .then((response) => {
-        const copy = response.clone()
-        caches.open(CACHE).then((cache) => cache.put(request, copy))
+        if (response.ok && response.type === "basic") {
+          const copy = response.clone()
+          caches.open(CACHE).then((cache) => cache.put(request, copy))
+        }
         return response
       })
       .catch(() => caches.match(request).then((cached) => cached || caches.match("/"))),

@@ -11,7 +11,7 @@
     "format:check": "prettier --check .",
     "lint": "next lint",
     "start": "next start",
-    "test": "tsx --tsconfig tsconfig.json --test lib/ai/*.test.ts"
+    "test": "tsx --tsconfig tsconfig.json --test lib/ai/*.test.ts lib/stories/*.test.ts"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
@@ -35,6 +35,7 @@
     "expo-asset": "latest",
     "expo-file-system": "latest",
     "expo-gl": "latest",
+    "firebase": "^13.0.0",
     "framer-motion": "^12.4.10",
     "input-otp": "^1.4.2",
     "lucide-react": "^0.542.0",
