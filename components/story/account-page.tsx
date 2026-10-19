@@ -2,15 +2,21 @@
 
 import { useEffect, useState, type ReactNode } from "react"
 import Link from "next/link"
-import { BookOpen, Bookmark, CheckCircle2, Flame } from "lucide-react"
+import { BookOpen, Bookmark, CheckCircle2, Flame, Languages } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useFirebaseUser } from "@/components/story/auth-button"
+import { LanguagePicker } from "@/components/story/language-picker"
 import { LogoutButton } from "@/components/story/logout-button"
 import { StoryShell } from "@/components/story/story-shell"
 import { isFirebaseConfigured } from "@/lib/firebase/client"
 import { listFavorites, type FavoriteStory } from "@/lib/firebase/favorites"
 import type { CloudStoryProgress, UserProfile } from "@/lib/firebase/types"
-import { ensureUserProfile, listUserStoryProgress } from "@/lib/firebase/users"
+import { ensureUserProfile, listUserStoryProgress, updatePreferredLanguage } from "@/lib/firebase/users"
+import {
+  loadPreferredLanguage,
+  savePreferredLanguage,
+  type StoryLanguage,
+} from "@/lib/stories/language"
 
 export function AccountPage() {
   const user = useFirebaseUser()
@@ -20,6 +26,12 @@ export function AccountPage() {
   const [favorites, setFavorites] = useState<FavoriteStory[]>([])
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
+  const [language, setLanguage] = useState<StoryLanguage | null>(null)
+  const [savingLang, setSavingLang] = useState(false)
+
+  useEffect(() => {
+    setLanguage(loadPreferredLanguage())
+  }, [])
 
   useEffect(() => {
     let cancelled = false
@@ -43,6 +55,7 @@ export function AccountPage() {
           setProfile(p)
           setProgress(list)
           setFavorites(favs)
+          if (p?.preferredLanguage) setLanguage(p.preferredLanguage)
         }
       } catch (e) {
         if (!cancelled) {
@@ -60,6 +73,21 @@ export function AccountPage() {
       cancelled = true
     }
   }, [user, configured])
+
+  async function handleLanguageChange(next: StoryLanguage) {
+    setLanguage(next)
+    savePreferredLanguage(next)
+    if (!user) return
+    setSavingLang(true)
+    try {
+      await updatePreferredLanguage(user.uid, next)
+      setProfile((prev) => (prev ? { ...prev, preferredLanguage: next } : prev))
+    } catch {
+      // local preference still saved
+    } finally {
+      setSavingLang(false)
+    }
+  }
 
   return (
     <StoryShell showNav>
@@ -140,6 +168,28 @@ export function AccountPage() {
                     value={progress.filter((p) => p.status === "in_progress").length}
                   />
                 </div>
+              </section>
+
+              <section
+                className={`rounded-2xl border p-4 shadow-sm ${
+                  language
+                    ? "border-[var(--story-line)] bg-white"
+                    : "border-amber-200 bg-amber-50/80"
+                }`}
+              >
+                <h2 className="mb-2 flex items-center gap-1.5 text-sm font-semibold text-[var(--story-ink)]">
+                  <Languages className="size-3.5 text-[var(--story-accent)]" />
+                  Preferred language
+                </h2>
+                {!language ? (
+                  <p className="mb-3 text-sm text-amber-900">
+                    Set English or Hindi — new story chats will follow this language.
+                  </p>
+                ) : null}
+                <LanguagePicker value={language} onChange={handleLanguageChange} askFirst />
+                {savingLang ? (
+                  <p className="mt-2 text-[11px] text-[var(--story-muted)]">Saving…</p>
+                ) : null}
               </section>
 
               <section>

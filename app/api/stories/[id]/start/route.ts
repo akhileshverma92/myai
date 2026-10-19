@@ -5,6 +5,7 @@ import { startStorySession } from "@/lib/stories/engine"
 
 const bodySchema = z.object({
   characterNames: z.record(z.string(), z.string().max(40)).optional(),
+  language: z.enum(["en", "hi"]).optional(),
 })
 
 export async function POST(request: Request, context: { params: Promise<{ id: string }> }) {
@@ -26,7 +27,10 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
     return NextResponse.json({ error: "Invalid name setup." }, { status: 400 })
   }
 
-  const result = startStorySession(id, { characterNames: parsed.data.characterNames })
+  const result = await startStorySession(id, {
+    characterNames: parsed.data.characterNames,
+    language: parsed.data.language,
+  })
   if ("error" in result) {
     return NextResponse.json({ error: result.error }, { status: 400 })
   }

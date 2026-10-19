@@ -1,6 +1,12 @@
 import { randomUUID } from "crypto"
 import { getStoryById } from "@/lib/stories/catalog"
 import {
+  buildLanguageSystemAddon,
+  isStoryLanguage,
+  openingLocalizePrompt,
+  type StoryLanguage,
+} from "@/lib/stories/language"
+import {
   applyNamesToText,
   buildCharacterNamesSystemAddon,
   playerNameFromSlots,
@@ -14,6 +20,10 @@ import {
 } from "@/lib/stories/scoring"
 import { storyModelChat } from "@/lib/stories/model"
 import type { StoryChatMessage, StoryProgressState, StorySession } from "@/lib/stories/types"
+
+function resolveLanguage(value: unknown): StoryLanguage {
+  return isStoryLanguage(value) ? value : "en"
+}
 
 function extractJsonObject(text: string): unknown {
   const trimmed = text.trim()
@@ -29,20 +39,41 @@ function extractJsonObject(text: string): unknown {
   }
 }
 
-export function startStorySession(
+export async function startStorySession(
   storyId: string,
-  opts?: { characterNames?: Record<string, string> },
-): { session: StorySession } | { error: string } {
+  opts?: { characterNames?: Record<string, string>; language?: StoryLanguage },
+): Promise<{ session: StorySession } | { error: string }> {
   const story = getStoryById(storyId)
   if (!story) return { error: "Story not found." }
 
   const resolved = resolveCharacterNames(story.nameSlots, opts?.characterNames)
   if (resolved.error) return { error: resolved.error }
 
+  const language = resolveLanguage(opts?.language)
   const characterNames = resolved.names
   const playerName = playerNameFromSlots(characterNames, story.nameSlots)
   const now = new Date().toISOString()
-  const opening = applyNamesToText(story.openingScene, story.nameSlots, characterNames)
+  let opening = applyNamesToText(story.openingScene, story.nameSlots, characterNames)
+
+  if (language !== "en") {
+    try {
+      const localized = await storyModelChat({
+        messages: [
+          {
+            role: "system",
+            content:
+              "You adapt interactive story openings into the player's language. Output only the rewritten scene.",
+          },
+          { role: "user", content: openingLocalizePrompt(opening, language) },
+        ],
+        temperature: 0.5,
+        maxTokens: 900,
+      })
+      if (localized.text.trim()) opening = localized.text.trim()
+    } catch {
+      // Keep English opening if localization fails; chat will still use Hindi replies.
+    }
+  }
 
   return {
     session: {
@@ -52,6 +83,7 @@ export function startStorySession(
       updatedAt: now,
       characterNames,
       playerName,
+      language,
       messages: [
         {
           id: randomUUID(),
@@ -72,6 +104,7 @@ export async function runStoryTurn(args: {
   history: StoryChatMessage[]
   progress: StoryProgressState
   characterNames: Record<string, string>
+  language?: StoryLanguage
   signal?: AbortSignal
 }): Promise<{
   assistantMessage: StoryChatMessage
@@ -88,7 +121,12 @@ export async function runStoryTurn(args: {
   const resolved = resolveCharacterNames(story.nameSlots, args.characterNames)
   if (resolved.error) throw new Error(resolved.error)
 
-  const systemPrompt = `${story.systemPrompt}\n${buildCharacterNamesSystemAddon(story, resolved.names)}`
+  const language = resolveLanguage(args.language)
+  const systemPrompt = [
+    story.systemPrompt,
+    buildCharacterNamesSystemAddon(story, resolved.names),
+    buildLanguageSystemAddon(language),
+  ].join("\n\n")
 
   const historyForModel = args.history
     .filter((m) => m.role === "user" || m.role === "assistant")
