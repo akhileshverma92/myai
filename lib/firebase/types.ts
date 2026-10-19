@@ -3,6 +3,8 @@ export type UserProfile = {
   displayName: string
   photoURL: string | null
   email: string | null
+  /** Chat / story language. Null until the user chooses on Profile. */
+  preferredLanguage: "en" | "hi" | null
   createdAt: string
   updatedAt: string
   storiesStarted: number

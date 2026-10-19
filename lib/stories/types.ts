@@ -146,6 +146,8 @@ export type StorySession = {
   characterNames: Record<string, string>
   /** Convenience: player slot name */
   playerName: string
+  /** Language chosen for this playthrough (en / hi) */
+  language?: "en" | "hi"
   messages: StoryChatMessage[]
   progress: StoryProgressState
 }

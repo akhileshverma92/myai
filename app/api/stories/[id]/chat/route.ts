@@ -29,6 +29,7 @@ const bodySchema = z.object({
   history: z.array(messageSchema).max(80),
   progress: progressSchema,
   characterNames: z.record(z.string(), z.string().max(40)),
+  language: z.enum(["en", "hi"]).optional(),
 })
 
 export async function POST(request: Request, context: { params: Promise<{ id: string }> }) {
@@ -63,6 +64,7 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
       history: body.history,
       progress: body.progress,
       characterNames: body.characterNames,
+      language: body.language,
     })
 
     return NextResponse.json({

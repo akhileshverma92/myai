@@ -12,6 +12,7 @@ import { ProgressDrawer } from "@/components/story/progress-drawer"
 import { ScoreChips, ScoreToast } from "@/components/story/score-chips"
 import { StoryShell } from "@/components/story/story-shell"
 import { syncProgressToCloud } from "@/lib/firebase/progress"
+import { isStoryLanguage, loadPreferredLanguage } from "@/lib/stories/language"
 import { getSession, saveSession } from "@/lib/stories/storage"
 import type { StoryChatMessage, StoryProgressState, StorySession } from "@/lib/stories/types"
 import { cn } from "@/lib/utils"
@@ -164,6 +165,9 @@ export function StoryPlay({ storyId }: { storyId: string }) {
             session.characterNames && Object.keys(session.characterNames).length
               ? session.characterNames
               : { player: session.playerName || "Friend" },
+          language: isStoryLanguage(session.language)
+            ? session.language
+            : loadPreferredLanguage() ?? "en",
         }),
       })
       const data = await res.json()

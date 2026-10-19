@@ -8,14 +8,20 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useFirebaseUser } from "@/components/story/auth-button"
+import { LanguagePicker } from "@/components/story/language-picker"
 import { StoryComments } from "@/components/story/story-comments"
 import { StoryShell } from "@/components/story/story-shell"
 import { addFavorite, isStoryFavorited, removeFavorite } from "@/lib/firebase/favorites"
 import { mapFirebaseError } from "@/lib/firebase/errors"
 import { syncProgressToCloud } from "@/lib/firebase/progress"
 import { getStoryHype, likeStory } from "@/lib/firebase/social"
-import { ensureUserProfile } from "@/lib/firebase/users"
+import { ensureUserProfile, updatePreferredLanguage } from "@/lib/firebase/users"
 import type { StoryHype } from "@/lib/firebase/types"
+import {
+  loadPreferredLanguage,
+  savePreferredLanguage,
+  type StoryLanguage,
+} from "@/lib/stories/language"
 import { loadStoryNameDraft, saveStoryNameDraft } from "@/lib/stories/player-prefs"
 import { getLatestSessionForStory } from "@/lib/stories/storage"
 import type { NameSlot } from "@/lib/stories/types"
@@ -47,6 +53,11 @@ export function StoryDetail({ storyId }: { storyId: string }) {
   const [liking, setLiking] = useState(false)
   const [favorited, setFavorited] = useState(false)
   const [favBusy, setFavBusy] = useState(false)
+  const [language, setLanguage] = useState<StoryLanguage | null>(null)
+
+  useEffect(() => {
+    setLanguage(loadPreferredLanguage())
+  }, [])
 
   useEffect(() => {
     let cancelled = false
@@ -67,6 +78,16 @@ export function StoryDetail({ storyId }: { storyId: string }) {
         if (!cancelled) setHasSave(Boolean(existing))
         const stats = await getStoryHype(storyId)
         if (!cancelled) setHype(stats)
+        if (user) {
+          try {
+            const profile = await ensureUserProfile(user)
+            if (!cancelled && profile?.preferredLanguage) {
+              setLanguage(profile.preferredLanguage)
+            }
+          } catch {
+            // local language still works
+          }
+        }
       } catch (e) {
         if (!cancelled) setError(e instanceof Error ? e.message : "Failed to load")
       }
@@ -74,7 +95,7 @@ export function StoryDetail({ storyId }: { storyId: string }) {
     return () => {
       cancelled = true
     }
-  }, [storyId])
+  }, [storyId, user])
 
   useEffect(() => {
     let cancelled = false
@@ -96,25 +117,42 @@ export function StoryDetail({ storyId }: { storyId: string }) {
   }, [user, storyId])
 
   const canStart = useMemo(() => {
-    if (!story) return false
+    if (!story || !language) return false
     return story.nameSlots.every((slot) => !slot.required || Boolean(names[slot.id]?.trim()))
-  }, [story, names])
+  }, [story, names, language])
 
   const playerLabel = names.player?.trim()
 
+  async function handleLanguageChange(next: StoryLanguage) {
+    setLanguage(next)
+    savePreferredLanguage(next)
+    if (user) {
+      try {
+        await updatePreferredLanguage(user.uid, next)
+      } catch {
+        // local still ok
+      }
+    }
+  }
+
   async function startFresh() {
-    if (!story || !canStart) {
-      setError("Fill in the required character names to start.")
+    if (!story || !canStart || !language) {
+      setError(
+        !language
+          ? "Choose English or Hindi before starting."
+          : "Fill in the required character names to start.",
+      )
       return
     }
     setLoading(true)
     setError(null)
     try {
       saveStoryNameDraft(storyId, names)
+      savePreferredLanguage(language)
       const res = await fetch(`/api/stories/${storyId}/start`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ characterNames: names }),
+        body: JSON.stringify({ characterNames: names, language }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || "Could not start")
@@ -348,6 +386,20 @@ export function StoryDetail({ storyId }: { storyId: string }) {
                   />
                 </div>
               ))}
+            </div>
+
+            <div
+              className={`mt-4 rounded-xl border px-3 py-3 ${
+                language
+                  ? "border-[var(--story-line)] bg-[var(--story-bg)]/50"
+                  : "border-amber-200 bg-amber-50/80"
+              }`}
+            >
+              <LanguagePicker
+                value={language}
+                onChange={(next) => void handleLanguageChange(next)}
+                askFirst
+              />
             </div>
           </div>
 
